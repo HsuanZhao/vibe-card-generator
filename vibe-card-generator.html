@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日一个 Vibe 工具 · 卡片生成器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --ink:#0B0D12;
+    --panel:#12151C;
+    --card:#13161D;
+    --lime:#D6F24C;
+    --coral:#FF6B4A;
+    --white:#F3F4F0;
+    --muted:#8B8F98;
+    --line: rgba(243,244,240,0.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--ink);color:var(--white);
+    font-family:'Noto Sans SC','Space Grotesk',sans-serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  .app{display:flex;min-height:100vh;}
+  .left{
+    width:400px; flex-shrink:0; background:var(--panel);
+    border-right:1px solid var(--line);
+    padding:28px 26px; overflow-y:auto;
+  }
+  .right{
+    flex:1; display:flex; align-items:center; justify-content:center;
+    padding:40px; background:
+      radial-gradient(circle at 20% 15%, rgba(214,242,76,0.05), transparent 45%),
+      radial-gradient(circle at 80% 85%, rgba(255,107,74,0.05), transparent 45%),
+      var(--ink);
+  }
+
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--lime);box-shadow:0 0 12px var(--lime);}
+  .brand h1{font-size:17px;font-weight:700;margin:0;letter-spacing:0.2px;}
+  .sub{font-size:12px;color:var(--muted);margin:0 0 26px;font-family:'IBM Plex Mono',monospace;}
+
+  label{display:block;font-size:12px;color:var(--muted);margin:18px 0 6px;font-family:'IBM Plex Mono',monospace;letter-spacing:0.3px;}
+  label.first{margin-top:0;}
+  input[type=text], textarea{
+    width:100%; background:#0D0F14; border:1px solid var(--line); border-radius:8px;
+    color:var(--white); padding:10px 12px; font-size:13.5px; font-family:'Noto Sans SC',sans-serif;
+    resize:vertical; outline:none; transition:border-color .15s;
+  }
+  input[type=text]:focus, textarea:focus{border-color:var(--lime);}
+  textarea{min-height:64px; line-height:1.5;}
+
+  .row{display:flex; gap:10px;}
+  .row > div{flex:1;}
+
+  .fetchbtn{
+    width:100%; margin-top:12px; padding:11px; border:none; border-radius:8px;
+    background:var(--lime); color:#0B0D12; font-weight:700; font-size:13.5px;
+    cursor:pointer; font-family:'Space Grotesk',sans-serif; letter-spacing:0.2px;
+    transition:transform .1s, box-shadow .15s;
+  }
+  .fetchbtn:hover{box-shadow:0 0 0 3px rgba(214,242,76,0.18);}
+  .fetchbtn:active{transform:scale(0.98);}
+  .fetchbtn:disabled{opacity:0.5; cursor:wait;}
+
+  .status{font-size:11.5px; margin-top:8px; min-height:16px; font-family:'IBM Plex Mono',monospace;}
+  .status.err{color:var(--coral);}
+  .status.ok{color:var(--lime);}
+
+  .divider{height:1px;background:var(--line);margin:22px 0;}
+
+  .swatches{display:flex; gap:8px; margin-top:4px;}
+  .colorpick{display:flex; align-items:center; gap:8px; margin-top:6px;}
+  .colorpick input[type=color]{
+    width:36px; height:32px; padding:0; border:1px solid var(--line); border-radius:6px;
+    background:none; cursor:pointer;
+  }
+  .colorval{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); text-transform:uppercase;}
+  .swatch{width:30px;height:30px;border-radius:8px;cursor:pointer;border:2px solid transparent; flex-shrink:0;}
+  .swatch.active{border-color:var(--white);}
+
+  .logo-row{display:flex;align-items:center;gap:10px;margin-top:8px;}
+  .logo-row img{width:36px;height:36px;border-radius:8px;background:#fff;object-fit:contain;padding:2px;}
+  .logo-row input{flex:1;}
+
+  .upload-row{display:flex; gap:8px; margin-top:8px;}
+  .uploadbtn{
+    flex:1; padding:9px 10px; border-radius:8px; border:1px dashed var(--line);
+    background:rgba(255,255,255,0.02); color:var(--muted); font-size:12.5px;
+    cursor:pointer; font-family:'IBM Plex Mono',monospace; transition:border-color .15s, color .15s;
+  }
+  .uploadbtn:hover{border-color:var(--lime); color:var(--lime);}
+  .clearbtn{
+    padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:transparent;
+    color:var(--coral); font-size:12.5px; cursor:pointer; font-family:'IBM Plex Mono',monospace;
+  }
+
+  .exportbtn{
+    width:100%; margin-top:22px; padding:13px; border:1px solid var(--line); border-radius:8px;
+    background:transparent; color:var(--white); font-weight:600; font-size:13.5px;
+    cursor:pointer; font-family:'Space Grotesk',sans-serif;
+  }
+  .exportbtn:hover{border-color:var(--coral); color:var(--coral);}
+
+  /* ---------- CARD ---------- */
+  .stage{transform-origin:center; }
+  .card{
+    width:900px; height:1200px; position:relative; overflow:hidden;
+    background:#13161D;
+    display:flex; flex-direction:column;
+    font-family:'Noto Sans SC',sans-serif;
+    box-shadow:0 40px 80px rgba(0,0,0,0.55);
+  }
+  .card .texture{
+    position:absolute; inset:0; opacity:0.5; pointer-events:none;
+    background-image:
+      radial-gradient(circle at 85% 6%, var(--accent2, #FF6B4A) 0%, transparent 30%),
+      radial-gradient(circle at 12% 96%, var(--accent1, #D6F24C) 0%, transparent 34%);
+    mix-blend-mode:screen;
+  }
+  .card .grid-lines{
+    position:absolute; inset:0; pointer-events:none; opacity:0.5;
+    background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size: 100% 84px;
+  }
+
+  .card .top{position:relative; padding:52px 64px 0; z-index:2; display:flex; flex-direction:column; align-items:center; text-align:center;}
+
+  .eyebrow{
+    display:flex; align-items:center; gap:10px; font-family:'IBM Plex Mono',monospace;
+    font-size:17px; color:var(--accent1,#D6F24C); letter-spacing:1.5px; font-weight:600;
+    align-self:stretch; justify-content:center;
+  }
+  .eyebrow .sep{width:5px;height:5px;border-radius:50%;background:var(--muted);}
+  .eyebrow .ep{color:var(--muted);}
+
+  .site-logo-frame{
+    width:172px;height:172px;border-radius:40px; flex-shrink:0; padding:8px;
+    background:linear-gradient(135deg, var(--accent1,#D6F24C), var(--accent2,#FF6B4A));
+    box-shadow:0 24px 48px rgba(0,0,0,0.5);
+    margin:38px 0 30px;
+  }
+  .site-logo{
+    width:100%;height:100%;border-radius:32px; background:var(--logo-bg,#fff);
+    display:flex;align-items:center;justify-content:center; overflow:hidden; padding:18px;
+  }
+  .site-logo img{width:100%;height:100%;object-fit:contain;}
+
+  .headline{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:56px; line-height:1.12;
+    color:var(--title-color,#F3F4F0); letter-spacing:-0.5px; max-width:760px;
+  }
+
+  .tagline{
+    font-size:25px; color:var(--accent1,#D6F24C); margin-top:16px; line-height:1.5; font-weight:600;
+    max-width:640px; font-family:'IBM Plex Mono',monospace;
+  }
+
+  .hairline{width:64px; height:3px; border-radius:2px; margin:28px 0; background:linear-gradient(90deg, var(--accent1,#D6F24C), var(--accent2,#FF6B4A));}
+
+  .desc{
+    font-size:22px; line-height:1.8; color:#D7D9D4; margin-top:0;
+    max-width:660px; white-space:pre-wrap; font-weight:400; text-align:left;
+  }
+
+  .tags{display:flex; flex-wrap:wrap; gap:10px; margin-top:30px; justify-content:center;}
+  .tag{
+    font-family:'IBM Plex Mono',monospace; font-size:16px; padding:8px 16px;
+    border-radius:999px; border:1px solid var(--line); color:var(--white);
+    background:rgba(255,255,255,0.03);
+  }
+  .tag.hl{background:var(--accent1,#D6F24C); color:#0B0D12; border-color:transparent; font-weight:600;}
+
+  .spacer{flex:1;}
+
+  .browserbar{
+    margin:0 64px 0; position:relative; z-index:2;
+    background:#0D0F14; border:1px solid var(--line); border-radius:14px;
+    padding:16px 20px; display:flex; align-items:center; gap:14px;
+  }
+  .traffic{display:flex; gap:7px;}
+  .traffic span{width:11px;height:11px;border-radius:50%;}
+  .traffic .r{background:#FF6B4A;} .traffic .y{background:#D6F24C;} .traffic .g{background:#5FD98A;}
+  .urlpill{
+    flex:1; background:rgba(255,255,255,0.04); border-radius:8px; padding:9px 14px;
+    font-family:'IBM Plex Mono',monospace; font-size:16px; color:#C9CCC4;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+
+  .footer{
+    position:relative; z-index:2; margin-top:32px; padding:26px 64px 44px;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    border-top:1px solid var(--line);
+  }
+  .footer .author{
+    font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:20px; color:var(--white);
+    display:flex; align-items:center; gap:8px; letter-spacing:0.2px;
+  }
+  .footer .author .at{color:var(--accent1,#D6F24C);}
+  .footer .date{font-family:'IBM Plex Mono',monospace; font-size:14px; color:var(--muted); letter-spacing:0.5px;}
+
+  @media (max-width: 900px){
+    .app{flex-direction:column;}
+    .left{width:100%; border-right:none; border-bottom:1px solid var(--line);}
+    .right{padding:20px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="left">
+    <div class="brand"><div class="dot"></div><h1>Vibe 卡片生成器</h1></div>
+    <p class="sub">// 每日介绍一个 vibe 工具 · 小红书 3:4</p>
+
+    <label class="first">粘贴网站链接</label>
+    <input type="text" id="urlInput" placeholder="https://example.com" value="">
+    <button class="fetchbtn" id="fetchBtn" onclick="fetchSite()">🔗 读取网站信息</button>
+    <div class="status" id="status"></div>
+
+    <div class="divider"></div>
+
+    <label>Logo（自动获取 / 也可手动上传图片）</label>
+    <div class="logo-row">
+      <img id="logoPreview" src="" onerror="this.style.visibility='hidden'">
+      <input type="text" id="logoInput" placeholder="logo 图片链接" oninput="onLogoUrlInput()">
+    </div>
+    <div class="upload-row">
+      <input type="file" id="logoFile" accept="image/*" style="display:none" onchange="onLogoFile(event)">
+      <button type="button" class="uploadbtn" onclick="document.getElementById('logoFile').click()">📁 上传本地 Logo 图片</button>
+      <button type="button" class="clearbtn" id="clearLogoBtn" onclick="clearLogoFile()" style="display:none">✕ 移除</button>
+    </div>
+
+    <label>工具名称</label>
+    <input type="text" id="titleInput" placeholder="工具名称" oninput="render()">
+
+    <label>一句话定位 / tagline</label>
+    <input type="text" id="taglineInput" placeholder="例如：让灵感秒变提示词" oninput="render()">
+
+    <label>详细介绍</label>
+    <textarea id="descInput" placeholder="工具能做什么、适合谁用、亮点是什么…" oninput="render()"></textarea>
+
+    <label>标签（用逗号分隔，第一个会高亮）</label>
+    <input type="text" id="tagsInput" placeholder="AI绘画, 免费, 一键生成" oninput="render()">
+
+    <label>期数 / Episode</label>
+    <div class="row">
+      <div><input type="text" id="epInput" placeholder="EP.01" value="EP.01" oninput="render()"></div>
+      <div><input type="text" id="dateInput" placeholder="07.07" oninput="render()"></div>
+    </div>
+
+    <label>网址显示文本</label>
+    <input type="text" id="urlDisplay" placeholder="example.com" oninput="render()">
+
+    <div class="divider"></div>
+
+    <label class="first">配色主题</label>
+    <div class="swatches" id="swatches"></div>
+
+    <div class="row" style="margin-top:16px;">
+      <div>
+        <label class="first">Logo 背景色</label>
+        <div class="colorpick">
+          <input type="color" id="logoBgColor" value="#ffffff" oninput="render()">
+          <span class="colorval" id="logoBgVal">#FFFFFF</span>
+        </div>
+      </div>
+      <div>
+        <label class="first">名称字体颜色</label>
+        <div class="colorpick">
+          <input type="color" id="titleColor" value="#f3f4f0" oninput="render()">
+          <span class="colorval" id="titleColorVal">#F3F4F0</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="exportbtn" onclick="exportCard()">⬇️ 导出 PNG（3:4 高清图）</button>
+  </div>
+
+  <div class="right">
+    <div class="stage" id="stage">
+      <div class="card" id="card">
+        <div class="texture"></div>
+        <div class="grid-lines"></div>
+        <div class="top">
+          <div class="eyebrow">
+            <span id="epOut">EP.01</span>
+            <span class="sep"></span>
+            <span class="ep">每日一个 VIBE 工具</span>
+          </div>
+
+          <div class="site-logo-frame"><div class="site-logo"><img id="cardLogo" src="" onerror="this.style.opacity=0"></div></div>
+
+          <div class="headline" id="cardTitle">工具名称</div>
+          <div class="tagline" id="cardTagline">一句话定位 / tagline 会出现在这里</div>
+
+          <div class="hairline"></div>
+
+          <div class="desc" id="cardDesc">粘贴链接自动读取，或在左侧手动填写详细介绍文案，支持换行～</div>
+          <div class="tags" id="cardTags"></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="browserbar">
+          <div class="traffic"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+          <div class="urlpill" id="cardUrl">example.com</div>
+        </div>
+        <div class="footer">
+          <div class="author"><span class="at">@</span>硅律SiliconLawyer</div>
+          <div class="date" id="cardDate">07.07</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const THEMES = [
+  {a1:'#D6F24C', a2:'#FF6B4A'}, // 原生 lime/coral
+  {a1:'#7CE7FF', a2:'#FF6BD6'}, // 电光蓝/品红
+  {a1:'#FFD166', a2:'#EF476F'}, // 暖阳/玫瑰
+  {a1:'#B39CFF', a2:'#5FE7C4'}, // 紫雾/薄荷
+  {a1:'#5FD98A', a2:'#FFB347'}, // 森绿/橙
+];
+let currentTheme = 0;
+
+function buildSwatches(){
+  const box = document.getElementById('swatches');
+  box.innerHTML='';
+  THEMES.forEach((t,i)=>{
+    const el = document.createElement('div');
+    el.className = 'swatch' + (i===currentTheme?' active':'');
+    el.style.background = `linear-gradient(135deg, ${t.a1}, ${t.a2})`;
+    el.onclick = ()=>{ currentTheme = i; buildSwatches(); render(); };
+    box.appendChild(el);
+  });
+}
+buildSwatches();
+
+let uploadedLogoData = null; // base64 data url, takes priority when set
+
+function onLogoFile(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    uploadedLogoData = e.target.result;
+    document.getElementById('logoInput').value = '';
+    document.getElementById('logoInput').placeholder = '已使用本地上传图片（清空文件可切换回链接）';
+    document.getElementById('clearLogoBtn').style.display = 'inline-block';
+    render();
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearLogoFile(){
+  uploadedLogoData = null;
+  document.getElementById('logoFile').value = '';
+  document.getElementById('logoInput').placeholder = 'logo 图片链接';
+  document.getElementById('clearLogoBtn').style.display = 'none';
+  render();
+}
+
+function onLogoUrlInput(){
+  // 手动输入链接时，若之前上传过本地文件则视为覆盖
+  if(document.getElementById('logoInput').value.trim()){
+    clearLogoFile();
+  } else {
+    render();
+  }
+}
+
+function extractDomain(url){
+  try{ return new URL(url).hostname.replace('www.',''); }catch(e){ return url; }
+}
+
+async function fetchSite(){
+  const url = document.getElementById('urlInput').value.trim();
+  const statusEl = document.getElementById('status');
+  const btn = document.getElementById('fetchBtn');
+  if(!url){ statusEl.textContent='请先粘贴一个网址'; statusEl.className='status err'; return; }
+  let fullUrl = url;
+  if(!/^https?:\/\//i.test(fullUrl)) fullUrl = 'https://' + fullUrl;
+
+  btn.disabled = true;
+  statusEl.textContent = '正在读取网站信息…';
+  statusEl.className = 'status';
+
+  const domain = extractDomain(fullUrl);
+  document.getElementById('urlDisplay').value = domain;
+  clearLogoFile();
+  document.getElementById('logoInput').value = `https://logo.clearbit.com/${domain}`;
+
+  try{
+    const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(fullUrl);
+    const res = await fetch(proxy);
+    if(!res.ok) throw new Error('网络请求失败');
+    const html = await res.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+    const getMeta = (name) => {
+      const el = doc.querySelector(`meta[property="${name}"]`) || doc.querySelector(`meta[name="${name}"]`);
+      return el ? el.getAttribute('content') : null;
+    };
+
+    const ogTitle = getMeta('og:title') || (doc.querySelector('title')?.textContent) || domain;
+    const ogDesc = getMeta('og:description') || getMeta('description') || '';
+    const ogImage = getMeta('og:image');
+
+    document.getElementById('titleInput').value = ogTitle.trim().slice(0,40);
+    document.getElementById('descInput').value = ogDesc.trim().slice(0,140);
+    if(!document.getElementById('taglineInput').value){
+      document.getElementById('taglineInput').value = ogDesc.trim().split(/[。.!\n]/)[0].slice(0,28);
+    }
+    if(ogImage){
+      // og:image 常是配图不一定是logo,优先仍用 clearbit,若用户想用og图可手动替换
+    }
+
+    statusEl.textContent = '✓ 读取成功，可继续手动微调文案';
+    statusEl.className = 'status ok';
+  }catch(e){
+    statusEl.textContent = '⚠ 自动读取失败（可能是跨域限制），已填充域名与Logo，请手动补充标题/简介';
+    statusEl.className = 'status err';
+    if(!document.getElementById('titleInput').value){
+      document.getElementById('titleInput').value = domain;
+    }
+  }finally{
+    btn.disabled = false;
+    render();
+  }
+}
+
+function render(){
+  const theme = THEMES[currentTheme];
+  const card = document.getElementById('card');
+  card.style.setProperty('--accent1', theme.a1);
+  card.style.setProperty('--accent2', theme.a2);
+
+  const logoBg = document.getElementById('logoBgColor').value;
+  const titleColor = document.getElementById('titleColor').value;
+  card.style.setProperty('--logo-bg', logoBg);
+  card.style.setProperty('--title-color', titleColor);
+  document.getElementById('logoBgVal').textContent = logoBg.toUpperCase();
+  document.getElementById('titleColorVal').textContent = titleColor.toUpperCase();
+
+  document.getElementById('epOut').textContent = document.getElementById('epInput').value || 'EP.01';
+  document.getElementById('cardTitle').textContent = document.getElementById('titleInput').value || '工具名称';
+  document.getElementById('cardTagline').textContent = document.getElementById('taglineInput').value || '一句话定位 / tagline';
+  document.getElementById('cardDesc').textContent = document.getElementById('descInput').value || '详细介绍文案会显示在这里…';
+  document.getElementById('cardUrl').textContent = document.getElementById('urlDisplay').value || 'example.com';
+  document.getElementById('cardDate').textContent = document.getElementById('dateInput').value || '';
+
+  const logoUrl = uploadedLogoData || document.getElementById('logoInput').value;
+  document.getElementById('logoPreview').src = logoUrl;
+  document.getElementById('cardLogo').src = logoUrl;
+  document.getElementById('cardLogo').style.opacity = 1;
+
+  const tagsRaw = document.getElementById('tagsInput').value;
+  const tagsBox = document.getElementById('cardTags');
+  tagsBox.innerHTML = '';
+  tagsRaw.split(',').map(t=>t.trim()).filter(Boolean).forEach((t,i)=>{
+    const el = document.createElement('div');
+    el.className = 'tag' + (i===0?' hl':'');
+    el.textContent = '#' + t;
+    tagsBox.appendChild(el);
+  });
+}
+
+function fitStage(){
+  const stage = document.getElementById('stage');
+  const availW = document.querySelector('.right').clientWidth - 60;
+  const availH = window.innerHeight - 60;
+  const scale = Math.min(availW/900, availH/1200, 1);
+  stage.style.transform = `scale(${scale})`;
+}
+window.addEventListener('resize', fitStage);
+
+async function exportCard(){
+  const card = document.getElementById('card');
+  const stage = document.getElementById('stage');
+  const prevTransform = stage.style.transform;
+  stage.style.transform = 'none';
+  try{
+    const canvas = await html2canvas(card, {scale:2, backgroundColor:'#13161D', useCORS:true, allowTaint:true});
+    const link = document.createElement('a');
+    link.download = (document.getElementById('titleInput').value || 'vibe-card') + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }catch(e){
+    alert('导出失败，可能是Logo图片跨域限制。可尝试更换logo图片链接后重试，或右键卡片手动截图。');
+  }finally{
+    stage.style.transform = prevTransform;
+  }
+}
+
+render();
+fitStage();
+</script>
+</body>
+</html>
