@@ -88,7 +88,7 @@
 
 **赵璇律师**  
 北京市百瑞（上海）律师事务所执业律师，市场部负责人  
-公众号：**法律雇佣军LegalMercenary** & **贪心网络法GreedyCyberlaw**
+公众号：**法律雇佣军LegalMercenary** & **贪心网络法GreedyCyberlaw**  
 小红书：**@硅律SiliconLawyer**  
 专注科技伦理与法律交叉领域，分享 AI 工具、合规实务与效率方法。
 
