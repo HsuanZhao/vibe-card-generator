@@ -4,7 +4,7 @@
 
 一键生成具有科技感、适合社交媒体传播的工具介绍卡片。输入网址即可自动抓取网站信息，并支持高度自定义，导出高清 PNG 图片。
 
-<img width="1800" height="2400" alt="Avatalk" src="https://github.com/user-attachments/assets/5bc4d8ef-ec54-484e-96c2-4e02a4c35aa7" />
+<img width="1800" height="2400" alt="Avatalk (1)" src="https://github.com/user-attachments/assets/6889199e-7dd9-4e12-a5bb-46d128371642" />
 *（实际效果以运行后的界面为准）*
 
 ---
