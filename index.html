@@ -71,7 +71,7 @@
 
   .divider{height:1px;background:var(--line);margin:22px 0;}
 
-  .swatches{display:flex; gap:8px; margin-top:4px;}
+  .swatches{display:flex; flex-wrap:wrap; gap:8px; margin-top:4px;}
   .colorpick{display:flex; align-items:center; gap:8px; margin-top:6px;}
   .colorpick input[type=color]{
     width:36px; height:32px; padding:0; border:1px solid var(--line); border-radius:6px;
@@ -323,6 +323,17 @@ const THEMES = [
   {a1:'#FFD166', a2:'#EF476F'}, // 暖阳/玫瑰
   {a1:'#B39CFF', a2:'#5FE7C4'}, // 紫雾/薄荷
   {a1:'#5FD98A', a2:'#FFB347'}, // 森绿/橙
+  {a1:'#FF9F1C', a2:'#2EC4B6'}, // 橘阳/青碧
+  {a1:'#FF5D8F', a2:'#845EC2'}, // 蜜桃/紫罗兰
+  {a1:'#00F5D4', a2:'#00BBF9'}, // 荧光青/湖蓝
+  {a1:'#F4D35E', a2:'#EE964B'}, // 香草/杏橙
+  {a1:'#C9F2C7', a2:'#5B8C5A'}, // 嫩芽/森林绿
+  {a1:'#FF6F91', a2:'#FF9671'}, // 草莓/蜜橙
+  {a1:'#4CC9F0', a2:'#7209B7'}, // 天蓝/深紫
+  {a1:'#FFC6FF', a2:'#9D4EDD'}, // 淡粉/魅紫
+  {a1:'#FFADAD', a2:'#FFD6A5'}, // 蜜桃粉/奶油橙
+  {a1:'#06D6A0', a2:'#118AB2'}, // 薄荷绿/深海蓝
+  {a1:'#EF476F', a2:'#FFD166'}, // 玫红/暖黄
 ];
 let currentTheme = 0;
 
